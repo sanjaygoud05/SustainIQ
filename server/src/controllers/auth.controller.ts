@@ -5,6 +5,16 @@ import { prisma } from "../lib/prisma";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
+// helper so you don't repeat cookie options twice
+function setAuthCookie(res: Response, token: string) {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,       // required since your site is HTTPS
+    sameSite: "none",   // required since frontend (Vercel) and backend (Render) are different domains
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+}
+
 export async function register(req: Request, res: Response) {
   try {
     const { name, email, password } = req.body;
@@ -25,6 +35,8 @@ export async function register(req: Request, res: Response) {
     });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
+
+    setAuthCookie(res, token); // <-- ADD THIS
 
     res.status(201).json({
       token,
@@ -55,6 +67,8 @@ export async function login(req: Request, res: Response) {
     }
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
+
+    setAuthCookie(res, token); // <-- ADD THIS
 
     res.json({
       token,
